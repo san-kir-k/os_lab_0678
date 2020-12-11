@@ -159,11 +159,7 @@ void avl_tree::_print(const std::string& prefix, std::shared_ptr<tree_node> node
     if( node != nullptr ) {
         std::string new_prefix = "";
         for (int32_t i = 0; i < height; ++i) {
-            if (is_left) {
-                new_prefix += "    ";
-            } else {
-                new_prefix += "    ";
-            }
+            new_prefix += "    ";
         }
         _print(new_prefix, node->left, true, height + 1);
         std::cout << prefix;
