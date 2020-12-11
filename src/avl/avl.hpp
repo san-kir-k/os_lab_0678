@@ -6,6 +6,9 @@
 #include <memory>
 #include <cstdint>
 
+/**
+ * структура для процесса-вершины дерева с укаанным id
+ */
 struct tree_node {
     int32_t pid;
     int32_t balance;
@@ -33,11 +36,35 @@ class avl_tree {
         void _go_up(std::shared_ptr<tree_node> node, std::shared_ptr<tree_node> prev);
         void _print(const std::string& prefix, std::shared_ptr<tree_node> node, bool is_left, int32_t height);
     public:
+        /**
+         * конструктор по умолчанию
+         */
         avl_tree(): _root(nullptr) {};
+        /**
+         * поиск в дереве по id процесса
+         * возвращает вектор-путь от корневого процесса до искомого
+         * если искомый процесс не найден, то возвращаемый вектор имеет длину 0
+         */
         std::vector<int32_t> search(int32_t pid);
+        /**
+         * вставка в дерево по id процесса
+         * в случае успеха вернет true
+         * в случае неуспеха вернет false
+         */
         bool insert(int32_t pid);
+        /** 
+         * печать дерева на экран
+         */
         void print();
+        /**
+         * удаление всего поддерва, корнем которого является процесс с указанным id
+         * в случае успеха дерево перебалансируется
+         * в случае, если такого процесса нет, то метод никак не изменит дерево
+         */
         void delete_sub_tree(int32_t pid);
+        /** 
+         * деструктор по умолчанию
+         */
         ~avl_tree() = default;
 };
  
