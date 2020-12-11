@@ -152,15 +152,27 @@ bool avl_tree::_insert(int32_t pid, std::shared_ptr<tree_node> node) {
 }
 
 void avl_tree::print() {
-    _print("", _root, false);
+    _print("", _root, false, 1);
 }
 
-void avl_tree::_print(const std::string& prefix, std::shared_ptr<tree_node> node, bool is_left) {
+void avl_tree::_print(const std::string& prefix, std::shared_ptr<tree_node> node, bool is_left, int32_t height) {
     if( node != nullptr ) {
+        std::string new_prefix = "";
+        for (int32_t i = 0; i < height; ++i) {
+            if (is_left) {
+                new_prefix += "    ";
+            } else {
+                new_prefix += "    ";
+            }
+        }
+        _print(new_prefix, node->left, true, height + 1);
         std::cout << prefix;
-        std::cout << (is_left ? "├──" : "└──" );
+        if (height == 1) {
+            std::cout << "───";
+        } else {
+            std::cout << (is_left ? "┌──" : "└──" );
+        }
         std::cout << node->pid << "\n";
-        _print(prefix + (is_left ? "│   " : "    "), node->left, true);
-        _print(prefix + (is_left ? "│   " : "    "), node->right, false);
+        _print(new_prefix, node->right, false, height + 1);
     }    
 }

@@ -29,7 +29,7 @@ class avl_tree {
         std::shared_ptr<tree_node> _rebalance(std::shared_ptr<tree_node> node);
         void _delete_sub_tree(std::shared_ptr<tree_node> node);
         void _go_up(std::shared_ptr<tree_node> node, std::shared_ptr<tree_node> prev);
-        void _print(const std::string& prefix, std::shared_ptr<tree_node> node, bool is_left);
+        void _print(const std::string& prefix, std::shared_ptr<tree_node> node, bool is_left, int32_t height);
 
     public:
         avl_tree(): _root(nullptr) {};
