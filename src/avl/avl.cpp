@@ -176,3 +176,49 @@ void avl_tree::_print(const std::string& prefix, std::shared_ptr<tree_node> node
         _print(new_prefix, node->right, false, height + 1);
     }    
 }
+
+void avl_tree::delete_sub_tree(int32_t pid) {
+    std::shared_ptr<tree_node> to_delete = _find(pid, _root);
+    _delete_sub_tree(to_delete);
+    _reconstruct();
+}
+
+std::shared_ptr<tree_node> avl_tree::_find(int32_t pid, std::shared_ptr<tree_node> node) {
+    if (node == nullptr) {
+        return nullptr;
+    } else if (pid == node->pid) {
+        return node;
+    } else {
+        std::shared_ptr<tree_node> to = pid < node->pid ? node->left : node->right;
+        return _find(pid, to);
+    }
+}
+
+void avl_tree::_delete_sub_tree(std::shared_ptr<tree_node> node) {
+    if (node == nullptr) {
+        return;
+    } else {
+        if (node->parent->left == node) {
+            node->parent->left = nullptr;
+        } else {
+            node->parent->right = nullptr;
+        }
+        node->parent = nullptr;
+    }
+}
+
+void avl_tree::_rec_reconstruct(std::shared_ptr<tree_node>& new_root, std::shared_ptr<tree_node> node) {
+    if (node == nullptr) {
+        return;
+    }
+    _insert(node->pid, new_root);
+    _rec_reconstruct(new_root, node->left);
+    _rec_reconstruct(new_root, node->right);
+}
+
+void avl_tree::_reconstruct() {
+    std::shared_ptr<tree_node> old_root = _root;
+    _root = std::shared_ptr<tree_node>(new tree_node(old_root->pid));
+    _rec_reconstruct(_root, old_root->left);
+    _rec_reconstruct(_root, old_root->right);
+}
