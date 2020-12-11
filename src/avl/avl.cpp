@@ -179,6 +179,9 @@ void avl_tree::_print(const std::string& prefix, std::shared_ptr<tree_node> node
 
 void avl_tree::delete_sub_tree(int32_t pid) {
     std::shared_ptr<tree_node> to_delete = _find(pid, _root);
+    if (to_delete == nullptr) {
+        return;
+    }
     _delete_sub_tree(to_delete);
     _reconstruct();
 }
