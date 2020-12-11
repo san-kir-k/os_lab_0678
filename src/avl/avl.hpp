@@ -8,13 +8,13 @@
 
 struct tree_node {
     int32_t pid;
-    int32_t height;
+    int32_t balance;
     std::shared_ptr<tree_node> parent;
     std::shared_ptr<tree_node> left;
     std::shared_ptr<tree_node> right;
 
-    tree_node(): pid(-1), height(0), parent(nullptr), left(nullptr), right(nullptr) {}
-    tree_node(int32_t pid): pid(pid), height(0), parent(nullptr), left(nullptr), right(nullptr) {}
+    tree_node(): pid(-1), balance(0), parent(nullptr), left(nullptr), right(nullptr) {}
+    tree_node(int32_t pid): pid(pid), balance(0), parent(nullptr), left(nullptr), right(nullptr) {}
     ~tree_node() = default;
 };
 
@@ -26,13 +26,17 @@ class avl_tree {
         void _remove(std::shared_ptr<tree_node> node);
         void _left_rotate(std::shared_ptr<tree_node> node);
         void _right_rotate(std::shared_ptr<tree_node> node);
+        std::shared_ptr<tree_node> _rebalance(std::shared_ptr<tree_node> node);
         void _delete_sub_tree(std::shared_ptr<tree_node> node);
+        void _go_up(std::shared_ptr<tree_node> node, std::shared_ptr<tree_node> prev);
+        void _print(const std::string& prefix, std::shared_ptr<tree_node> node, bool is_left);
 
     public:
         avl_tree(): _root(nullptr) {};
         std::vector<int32_t> search(int32_t pid);
         bool insert(int32_t pid);
         bool remove(int32_t pid);
-        ~avl_tree();
+        void print();
+        ~avl_tree() = default;
 };
  
