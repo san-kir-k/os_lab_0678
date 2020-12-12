@@ -12,6 +12,7 @@ int32_t avl_tree::get_parent_pid(int32_t pid) {
 
 // поиск по дереву - начало
 bool avl_tree::search(int32_t pid, int32_t* path, int32_t* path_len) {
+    *path_len = 0;
     if (!_search(pid, path, _root, path_len)) {
         return false;
     }
