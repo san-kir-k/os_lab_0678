@@ -16,8 +16,12 @@ struct tree_node {
     std::shared_ptr<tree_node> left;
     std::shared_ptr<tree_node> right;
 
-    tree_node(): pid(-1), balance(0), left(nullptr), right(nullptr) {}
-    tree_node(int32_t pid): pid(pid), balance(0), left(nullptr), right(nullptr) {}
+    tree_node(): pid(-1), balance(0), left(nullptr), right(nullptr) {
+        parent.lock() = nullptr;
+    }
+    tree_node(int32_t pid): pid(pid), balance(0), left(nullptr), right(nullptr) {
+        parent.lock() = nullptr;
+    }
     ~tree_node() = default;
 };
 

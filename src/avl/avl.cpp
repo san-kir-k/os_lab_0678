@@ -277,14 +277,16 @@ void avl_tree::_remove(std::shared_ptr<tree_node> node) {
                 _root = nullptr;
             }
         }
-        if (node != _root) {
-            if (node->parent.lock()->left == node) {
-                node->parent.lock()->left = to_replace;
+        if (_root != nullptr) {
+            if (node != _root) {
+                if (node->parent.lock()->left == node) {
+                    node->parent.lock()->left = to_replace;
+                } else {
+                    node->parent.lock()->right = to_replace;
+                }
             } else {
-                node->parent.lock()->right = to_replace;
+                _root = to_replace;
             }
-        } else {
-            _root = to_replace;
         }
     } else if (node->right == nullptr) {
         to_replace = node->left;
