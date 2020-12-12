@@ -1,6 +1,7 @@
 #pragma once
 
 struct avl_tree;
+typedef struct avl_tree avl_tree;
 
 bool init_avl(struct avl_tree** tree);
 
@@ -13,3 +14,5 @@ bool remove_from_tree(struct avl_tree* tree, int id);
 int get_parent_id(struct avl_tree* tree, int id);
 
 int* get_path(struct avl_tree* tree, int id, int* path_len);
+
+void print_tree(struct avl_tree* tree);

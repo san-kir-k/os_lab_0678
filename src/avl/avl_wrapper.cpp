@@ -31,3 +31,7 @@ int* get_path(avl_tree* tree, int id, int* path_len) {
         *path_len = -1;
     return buffer;
 }
+
+void print_tree(struct avl_tree* tree) {
+    tree->print();
+}

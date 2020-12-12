@@ -13,3 +13,5 @@ extern "C" bool remove_from_tree(avl_tree * tree, int id);
 extern "C" int get_parent_id(avl_tree * tree, int id);
 
 extern "C" int* get_path(avl_tree * tree, int id, int* path_len);
+
+extern "C" void print_tree(struct avl_tree* tree);

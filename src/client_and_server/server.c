@@ -10,11 +10,14 @@
 #include <stdlib.h>
 #include <limits.h>
 
+#include "../avl/avl_c_externs.h"
+
 static const char* CLIENT_NAME = "./client";
 
 static const int32_t MAX_PID_NUM = 64;
 static const int32_t VOID_PID = INT_MAX;
 static int32_t REAL_PID_TABLE[MAX_PID_NUM];
+static avl_tree* AVL_TREE_PTR;
 
 typedef enum input_val input_val;
 enum input_val {
@@ -38,23 +41,25 @@ init_table() {
 
 void
 help() {
-printf("+--------------+-------------------------------------------+\n");
-printf("|   command    |               description                 |\n");
-printf("|--------------+-------------------------------------------|\n");
-printf("|--------------+-------------------------------------------|\n");
-printf("| create <pid> |        creates computing node             |\n");
-printf("|              |       (pids range from 0 to 63)           |\n");
-printf("|--------------+-------------------------------------------|\n");
-printf("| remove <pid> |         removes computing node            |\n");
-printf("|              |        (pids range from 0 to 63)          |\n");
-printf("|--------------+-------------------------------------------|\n");
-printf("|  exec <pid>  |          exec computing node              |\n");
-printf("|    <text>    |         finds pattern in text             |\n");
-printf("|   <pattern>  |        (pids range from 0 to 63)          |\n");
-printf("|--------------+-------------------------------------------|\n");
-printf("|     help     |               print usage                 |\n");
-printf("|              |       (pids range from 0 to 63)           |\n");
-printf("+--------------+-------------------------------------------+\n\n");
+    printf("+--------------+-------------------------------------------+\n");
+    printf("|   command    |               description                 |\n");
+    printf("|--------------+-------------------------------------------|\n");
+    printf("|--------------+-------------------------------------------|\n");
+    printf("| create <pid> |        creates computing node             |\n");
+    printf("|              |       (pids range from 0 to 63)           |\n");
+    printf("|--------------+-------------------------------------------|\n");
+    printf("| remove <pid> |         removes computing node            |\n");
+    printf("|              |        (pids range from 0 to 63)          |\n");
+    printf("|--------------+-------------------------------------------|\n");
+    printf("|  exec <pid>  |          exec computing node              |\n");
+    printf("|    <text>    |         finds pattern in text             |\n");
+    printf("|   <pattern>  |        (pids range from 0 to 63)          |\n");
+    printf("|--------------+-------------------------------------------|\n");
+    printf("|     help     |              print usage                  |\n");
+    printf("|              |       (pids range from 0 to 63)           |\n");
+    printf("|--------------+-------------------------------------------|\n");
+    printf("|     print    |         print process avl tree            |\n");
+    printf("+--------------+-------------------------------------------+\n\n");
 }
 
 input_val
@@ -94,6 +99,7 @@ remove_node(int32_t pid) {
     }
     kill(rpid, SIGTERM);
     REAL_PID_TABLE[pid] = -1;
+    remove_from_tree(AVL_TREE_PTR, pid);
     //...
     return true;
 }
@@ -119,6 +125,7 @@ create_node(int32_t pid) {
         execl(CLIENT_NAME, client_id, client_id, NULL);
     } else {
         REAL_PID_TABLE[pid] = fv;
+        add_to_tree(AVL_TREE_PTR, pid);
     }
     return true;
 }
@@ -164,6 +171,8 @@ server_loop() {
             printf("exec\n");
         } else if (strcmp(cmd, "help") == 0) {
             help();
+        } else if (strcmp(cmd, "print") == 0) {
+            print_tree(AVL_TREE_PTR);
         } else {
             printf("Unknown command, try help.\n");
         }
@@ -172,7 +181,9 @@ server_loop() {
 
 int 
 main() {
+    init_avl(&AVL_TREE_PTR);
     init_table();
     server_loop();
+    deinit_avl(AVL_TREE_PTR);
     return 0;
 }
