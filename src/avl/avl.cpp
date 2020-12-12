@@ -45,6 +45,9 @@ void avl_tree::_left_rotate(std::shared_ptr<tree_node> node) {
     right_son->left = node;
     node->parent = right_son; 
 
+    node->balance++;
+    right_son->balance++;
+
     if (node_b == -2 && rs_b == -1) {
         node->balance = 0;
         right_son->balance = 0;
@@ -75,6 +78,9 @@ void avl_tree::_right_rotate(std::shared_ptr<tree_node> node) {
     }
     left_son->right = node;
     node->parent = left_son; 
+
+    node->balance--;
+    left_son->balance--;
 
     if (node_b == 2 && ls_b == 1) {
         node->balance = 0;
@@ -325,7 +331,9 @@ void avl_tree::_remove(std::shared_ptr<tree_node> node) {
         to_delete->left->parent = to_delete;
         to_delete->balance = node->balance;
     }
-    _go_up_remove(to_replace_parent, to_replace);
+    if (to_replace_parent != nullptr) {
+        _go_up_remove(to_replace_parent, to_replace);
+    }
 }
  
 void avl_tree::_go_up_remove(std::shared_ptr<tree_node> node, std::shared_ptr<tree_node> prev) {
