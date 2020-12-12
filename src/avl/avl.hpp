@@ -32,7 +32,7 @@ class avl_tree {
         // рекурсивный поиск по дереву, возвращает указатель на искомый узел или nullptr
         std::shared_ptr<tree_node> _find(int32_t pid, std::shared_ptr<tree_node> node);
         // рекурсивынй поиск с обновлением пути
-        void _search(int32_t pid, std::vector<int32_t>& path, std::shared_ptr<tree_node> node);
+        bool _search(int32_t pid, int32_t* path, std::shared_ptr<tree_node> node, int32_t* height);
         // рекурсивная функция для вставки
         bool _insert(int32_t pid, std::shared_ptr<tree_node> node);
         // левый поворот
@@ -65,7 +65,7 @@ class avl_tree {
          * возвращает вектор-путь от корневого процесса до искомого
          * если искомый процесс не найден, то возвращаемый вектор имеет длину 0
          */
-        std::vector<int32_t> search(int32_t pid);
+        bool search(int32_t pid, int32_t* path, int32_t* path_len);
         /**
          * вставка в дерево по id процесса
          * в случае успеха вернет true
@@ -87,6 +87,11 @@ class avl_tree {
          * в случае неуспеха вернет false
          */
         bool remove(int32_t pid);
+        /**
+         * получить pid родителя
+         * в случае неуспеха вернется -1
+         */
+        int32_t get_parent_pid(int32_t pid);
         /** 
          * деструктор по умолчанию
          */

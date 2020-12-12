@@ -1,23 +1,36 @@
 #include "avl.hpp"
 
+// получить pid родителя - начало
+int32_t avl_tree::get_parent_pid(int32_t pid) {
+    std::shared_ptr<tree_node> node = _find(pid, _root);
+    if (node == nullptr || node == _root) {
+        return -1;
+    }
+    return node->parent.lock()->pid;
+}
+// получить pid родителя - конец
+
 // поиск по дереву - начало
-std::vector<int32_t> avl_tree::search(int32_t pid) {
-    std::vector<int32_t> path;
-    _search(pid, path, _root);
-    return path;
+bool avl_tree::search(int32_t pid, int32_t* path, int32_t* path_len) {
+    if (!_search(pid, path, _root, path_len)) {
+        return false;
+    }
+    (*path_len)++;
+    return true;
 }
 
-void avl_tree::_search(int32_t pid, std::vector<int32_t>& path, std::shared_ptr<tree_node> node) {
+bool avl_tree::_search(int32_t pid, int32_t* path, std::shared_ptr<tree_node> node, int32_t* height) {
     if (node == nullptr) {
-        path.clear();
-        return;
+        *height = 0;
+        return false;
     } else if (pid == node->pid) {
-        path.push_back(node->pid);
-        return;
+        path[*height] = node->pid;
+        return true;
     } else {
-        path.push_back(node->pid);
+        path[*height] = node->pid;
         std::shared_ptr<tree_node> to = pid < node->pid ? node->left : node->right;
-        return _search(pid, path, to);
+        (*height)++;
+        return _search(pid, path, to, height);
     }
 }
 // поиск по дереву - конец
