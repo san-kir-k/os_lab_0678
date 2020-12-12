@@ -35,12 +35,12 @@ void avl_tree::_left_rotate(std::shared_ptr<tree_node> node) {
         right_son->left->parent = node;
     }
     right_son->parent = node->parent;
-    if (node->parent == nullptr) {
+    if (node == _root) {
         _root = right_son;
-    } else if (node == node->parent->left) {
-        node->parent->left = right_son;
+    } else if (node == node->parent.lock()->left) {
+        node->parent.lock()->left = right_son;
     } else {
-        node->parent->right = right_son;
+        node->parent.lock()->right = right_son;
     }
     right_son->left = node;
     node->parent = right_son; 
@@ -69,12 +69,12 @@ void avl_tree::_right_rotate(std::shared_ptr<tree_node> node) {
         left_son->right->parent = node;
     }
     left_son->parent = node->parent;
-    if (node->parent == nullptr) {
+    if (node == _root) {
         _root = left_son;
-    } else if (node == node->parent->right) {
-        node->parent->right = left_son;
+    } else if (node == node->parent.lock()->right) {
+        node->parent.lock()->right = left_son;
     } else {
-        node->parent->left = left_son;
+        node->parent.lock()->left = left_son;
     }
     left_son->right = node;
     node->parent = left_son; 
@@ -104,7 +104,7 @@ std::shared_ptr<tree_node> avl_tree::_rebalance(std::shared_ptr<tree_node> node)
             _left_rotate(node->left);
         _right_rotate(node);
     }
-    return node->parent;
+    return node->parent.lock();
 }
 // перебалансировка - конец
 
@@ -151,16 +151,16 @@ void avl_tree::_go_up_insert(std::shared_ptr<tree_node> node, std::shared_ptr<tr
     if (node->balance == 0) {
         return;
     } else if (std::abs(node->balance) == 1) {
-        if (node->parent == nullptr) {
+        if (node == _root) {
             return;
         }
-        _go_up_insert(node->parent, node);
+        _go_up_insert(node->parent.lock(), node);
     } else {
         node = _rebalance(node);
-        if (node->balance == 0 || node->parent == nullptr) {
+        if (node->balance == 0 || node == _root) {
             return;
         }
-        _go_up_insert(node->parent, node);
+        _go_up_insert(node->parent.lock(), node);
     }
 }
 
@@ -196,6 +196,10 @@ bool avl_tree::delete_sub_tree(int32_t pid) {
     if (to_delete == nullptr) {
         return false;
     }
+    if (to_delete == _root) {
+        _root = nullptr;
+        return true;
+    }
     _delete_sub_tree(to_delete);
     _reconstruct();
     return true;
@@ -216,12 +220,12 @@ void avl_tree::_delete_sub_tree(std::shared_ptr<tree_node> node) {
     if (node == nullptr) {
         return;
     } else {
-        if (node->parent->left == node) {
-            node->parent->left = nullptr;
+        if (node->parent.lock()->left == node) {
+            node->parent.lock()->left = nullptr;
         } else {
-            node->parent->right = nullptr;
+            node->parent.lock()->right = nullptr;
         }
-        node->parent = nullptr;
+        node->parent.lock() = nullptr;
     }
 }
 
@@ -265,19 +269,19 @@ void avl_tree::_remove(std::shared_ptr<tree_node> node) {
         to_replace = node->right;
         if (to_replace != nullptr) {
             to_replace->parent = node->parent;
-            to_replace_parent = node->parent;
+            to_replace_parent = node->parent.lock();
         } else {
-            to_replace_parent = node->parent;
+            to_replace_parent = node->parent.lock();
             if (node == _root) {
                 to_replace_parent = nullptr;
                 _root = nullptr;
             }
         }
-        if (node->parent != nullptr) {
-            if (node->parent->left == node) {
-                node->parent->left = to_replace;
+        if (node != _root) {
+            if (node->parent.lock()->left == node) {
+                node->parent.lock()->left = to_replace;
             } else {
-                node->parent->right = to_replace;
+                node->parent.lock()->right = to_replace;
             }
         } else {
             _root = to_replace;
@@ -285,12 +289,12 @@ void avl_tree::_remove(std::shared_ptr<tree_node> node) {
     } else if (node->right == nullptr) {
         to_replace = node->left;
         to_replace->parent = node->parent;
-        to_replace_parent = node->parent;
-        if (node->parent != nullptr) {
-            if (node->parent->left == node) {
-                node->parent->left = to_replace;
+        to_replace_parent = node->parent.lock();
+        if (node != _root) {
+            if (node->parent.lock()->left == node) {
+                node->parent.lock()->left = to_replace;
             } else {
-                node->parent->right = to_replace;
+                node->parent.lock()->right = to_replace;
             }
         } else {
             _root = to_replace;
@@ -303,25 +307,25 @@ void avl_tree::_remove(std::shared_ptr<tree_node> node) {
         to_delete = min_in_right;
         to_delete_balance = to_delete->balance;
         to_replace = to_delete->right;
-        if (to_delete->parent == node) {
+        if (to_delete->parent.lock() == node) {
             if (to_replace != nullptr) {
                 to_replace->parent = to_delete;
             }
             to_replace_parent = to_delete;
         } else {
-            to_delete->parent->left = to_replace;
+            to_delete->parent.lock()->left = to_replace;
             if (to_replace != nullptr) {
                 to_replace->parent = to_delete->parent;
             }
-            to_replace_parent = to_delete->parent;
+            to_replace_parent = to_delete->parent.lock();
             to_delete->right = node->right;
             to_delete->right->parent = to_delete;
         }
-        if (node->parent != nullptr) {
-            if (node->parent->left == node) {
-                node->parent->left = to_delete;
+        if (node != _root) {
+            if (node->parent.lock()->left == node) {
+                node->parent.lock()->left = to_delete;
             } else {
-                node->parent->right = to_delete;
+                node->parent.lock()->right = to_delete;
             }
         } else {
             _root = to_delete;
@@ -345,16 +349,16 @@ void avl_tree::_go_up_remove(std::shared_ptr<tree_node> node, std::shared_ptr<tr
     if (std::abs(node->balance) == 1) {
         return;
     } else if (node->balance == 0) {
-        if (node->parent == nullptr) {
+        if (node == _root) {
             return;
         }
-        _go_up_remove(node->parent, node);
+        _go_up_remove(node->parent.lock(), node);
     } else {
         node = _rebalance(node);
-        if (node->balance == 0 || node->parent == nullptr) {
+        if (node->balance == 0 || node == _root) {
             return;
         }
-        _go_up_remove(node->parent, node);
+        _go_up_remove(node->parent.lock(), node);
     }
 }
 // удаление вершины дерева - конец

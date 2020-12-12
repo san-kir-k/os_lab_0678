@@ -12,12 +12,12 @@
 struct tree_node {
     int32_t pid;
     int32_t balance;
-    std::shared_ptr<tree_node> parent;
+    std::weak_ptr<tree_node> parent;
     std::shared_ptr<tree_node> left;
     std::shared_ptr<tree_node> right;
 
-    tree_node(): pid(-1), balance(0), parent(nullptr), left(nullptr), right(nullptr) {}
-    tree_node(int32_t pid): pid(pid), balance(0), parent(nullptr), left(nullptr), right(nullptr) {}
+    tree_node(): pid(-1), balance(0), left(nullptr), right(nullptr) {}
+    tree_node(int32_t pid): pid(pid), balance(0), left(nullptr), right(nullptr) {}
     ~tree_node() = default;
 };
 
