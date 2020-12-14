@@ -366,11 +366,16 @@ void avl_tree::_remove(std::shared_ptr<tree_node> node) {
 }
  
 void avl_tree::_go_up_remove(std::shared_ptr<tree_node> node, std::shared_ptr<tree_node> prev) {
-    if (prev == node->left) {
-        node->balance--;
+    if (node->left == nullptr && node->right == nullptr) {
+        node->balance = 0;
     } else {
-        node->balance++;
+        if (prev == node->left) {
+            node->balance--;
+        } else {
+            node->balance++;
+        }
     }
+    std::cout << "nb: " << node->balance << "\n";
     if (std::abs(node->balance) == 1) {
         return;
     } else if (node->balance == 0) {
