@@ -22,7 +22,7 @@ static void*        EXEC_PUB;
 static void*        HEARTBIT_SUB;
 
 void
-create_event(event* e, char* text, char* pattern, int32_t pid) {
+create_event(event* e, char* text, char* pattern, int32_t pid, cmd_type cmd, int32_t sleep_time) {
     strcpy(e->text, text);
     strcpy(e->pattern, pattern);
     e->text_size = 0;
@@ -34,6 +34,8 @@ create_event(event* e, char* text, char* pattern, int32_t pid) {
         e->pattern_size++;
     }
     e->to = pid;
+    e->cmd = cmd;
+    e->sleep_time = sleep_time;
 }
 
 void
@@ -57,7 +59,6 @@ remove_node(int32_t pid) {
     kill(rpid, SIGTERM);
     REAL_PID_TABLE[pid] = VOID_PID;
     remove_from_tree(AVL_TREE_PTR, pid);
-    //...
     return true;
 }
 
@@ -86,7 +87,7 @@ create_node(int32_t pid) {
     add_to_tree(AVL_TREE_PTR, pid);
     get_path(AVL_TREE_PTR, pid, &path_len, path);
     if (path_len == 1) {
-        strcpy(parent_name, MASTER_SOCKET);
+        strcpy(parent_name, MASTER_SOCKET_PUB);
     } else {
         int32_t parent_pid = get_parent_id(AVL_TREE_PTR, pid);
         if (pid < parent_pid) {
@@ -122,14 +123,62 @@ send_exec(char* text, char* pattern, int32_t pid) {
         printf("There is no node with this pid.\n");
         return false;
     }
-    event e; // добавить в ивент расширения протокола, создавать научиться ноды в список
-    create_event(&e, text, pattern, pid);
+    event e;
+    create_event(&e, text, pattern, pid, exec_cmd, 0);
     zmq_msg_t message;
     zmq_msg_init(&message);
     create_message(&message, &e);
     zmq_msg_send(&message, EXEC_PUB, 0);
     zmq_msg_close(&message);
     return true;
+}
+
+void 
+send_heartbit(int32_t input_time) {
+    event e;
+    create_event(&e, "", "", -1, hrbt_cmd, input_time);
+    zmq_msg_t message;
+    zmq_msg_init(&message);
+    create_message(&message, &e);
+    zmq_msg_send(&message, EXEC_PUB, 0);
+    zmq_msg_close(&message);
+}
+
+void
+heartbit(int32_t input_time) { 
+    int32_t time_to_wait = 4 * input_time;
+    zmq_setsockopt(HEARTBIT_SUB, ZMQ_RCVTIMEO, &time_to_wait, sizeof(time_to_wait));
+    int32_t heartbit_table[MAX_PID_NUM];
+    for (int32_t i = 0; i < MAX_PID_NUM; ++i) {
+        if (REAL_PID_TABLE[i] == VOID_PID) {
+            heartbit_table[i] = -1;
+        } else {
+            heartbit_table[i] = 0;
+        }
+    }
+    send_heartbit(input_time);
+    while (true) {
+        zmq_msg_t message;
+        zmq_msg_init(&message);
+        zmq_msg_init_size(&message, sizeof(event));
+        int32_t rv = zmq_msg_recv(&message, HEARTBIT_SUB, 0);
+        if (rv == -1 && errno == EAGAIN) {
+            break;
+        }
+        event* e = (event*)zmq_msg_data(&message);
+        heartbit_table[e->to]++;
+        zmq_msg_close(&message);        
+    }
+    int32_t count_of_dead = 0;
+    for (int32_t i = 0; i < MAX_PID_NUM; ++i) {
+        if (heartbit_table[i] == 0) {
+            printf("Dead: %d\n", i);
+            count_of_dead++;
+        }
+    }
+    if (count_of_dead == 0) {
+        printf("All is alive.\n");
+    }
 }
 
 void 
@@ -199,6 +248,17 @@ server_loop() {
             send_exec(text, pattern, pid);
         } else if (strcmp(cmd, "help") == 0) {
             help();
+        } else if (strcmp(cmd, "heartbit") == 0) {
+            int32_t input_time;
+            iv = input_int(&input_time);
+            if (iv == eof) {
+                printf("Server finishing it's work...\n");
+                break;
+            } else if (iv == bad) {
+                printf("Unknown arg, try help.\n");
+                continue;
+            }
+            heartbit(input_time);
         } else if (strcmp(cmd, "print") == 0) {
             print_tree(AVL_TREE_PTR);
         } else {

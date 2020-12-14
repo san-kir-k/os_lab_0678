@@ -1,11 +1,11 @@
 #pragma once
 #include <stdint.h>
 
-#define MASTER_SOCKET "ipc://sockets/lab0678_master"
+#define MASTER_SOCKET_PUB "ipc://sockets/lab0678_master_p"
+#define MASTER_SOCKET_SUB "ipc://sockets/lab0678_master_s"
 
 #define CMP_SOCKET_PATTERN_L "ipc://sockets/lab0678_cmp_l_"
 #define CMP_SOCKET_PATTERN_R "ipc://sockets/lab0678_cmp_r_"
-#define CMP_SOCKET_PATTERN_H "ipc://sockets/lab0678_cmp_h_"
 
 #define CLIENT_PROG_NAME "./client"
 

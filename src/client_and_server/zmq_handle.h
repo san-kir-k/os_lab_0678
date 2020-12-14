@@ -5,8 +5,14 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "defines.h"
+
+typedef enum {
+    exec_cmd,
+    hrbt_cmd
+} cmd_type;
 
 typedef struct {
     char text[128];
@@ -14,16 +20,18 @@ typedef struct {
     int32_t text_size;
     int32_t pattern_size;
     int32_t to;
+    cmd_type cmd;
+    int32_t sleep_time;
 } event;
 
 typedef enum {
     left,
     right,
     hrbt
-} type;
+} socket_type;
 
 void        create_message(zmq_msg_t* msg, event* e);
-void        init_cmp_name(int pid, char* name, type node_type);
+void        init_cmp_name(int pid, char* name, socket_type node_type);
 
 void        print_err_cmp(int32_t pid);
 void        print_err_mas();

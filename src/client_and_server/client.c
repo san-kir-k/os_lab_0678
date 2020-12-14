@@ -27,6 +27,8 @@ static void*    HRBT_SOCKET;
 void
 process_sigterm(int32_t sig) {
     printf("Computing node %d finishing it's work...\n", CLIENT_PID);
+    deinit_computing_socket(CONTEXT, LEFT_SOCKET, RIGHT_SOCKET,
+                            PARENT_SOCKET, HRBT_SOCKET, CLIENT_PID);
     exit(EXIT_SUCCESS);
 }
 
@@ -75,18 +77,43 @@ computing_loop() {
         zmq_msg_recv(&message, PARENT_SOCKET, 0);
         event* e = (event*)zmq_msg_data(&message);
         zmq_msg_close(&message);
-        if (e->to != CLIENT_PID) {
-            zmq_msg_t message_to_son;
-            zmq_msg_init(&message_to_son);
-            create_message(&message_to_son, e);
-            if (e->to > CLIENT_PID) {
-                zmq_msg_send(&message_to_son, RIGHT_SOCKET, 0);
+        if (e->cmd == exec_cmd) {
+            if (e->to != CLIENT_PID) {
+                zmq_msg_t message_to_son;
+                zmq_msg_init(&message_to_son);
+                create_message(&message_to_son, e);
+                if (e->to > CLIENT_PID) {
+                    zmq_msg_send(&message_to_son, RIGHT_SOCKET, 0);
+                } else {
+                    zmq_msg_send(&message_to_son, LEFT_SOCKET, 0);
+                }
+                zmq_msg_close(&message_to_son);
             } else {
-                zmq_msg_send(&message_to_son, LEFT_SOCKET, 0);
+                compute(e);
             }
-            zmq_msg_close(&message_to_son);
         } else {
-            compute(e);
+            zmq_msg_t message_to_l_son;
+            zmq_msg_init(&message_to_l_son);
+            create_message(&message_to_l_son, e);
+            zmq_msg_send(&message_to_l_son, LEFT_SOCKET, 0);
+            zmq_msg_close(&message_to_l_son);
+
+            zmq_msg_t message_to_r_son;
+            zmq_msg_init(&message_to_r_son);
+            create_message(&message_to_r_son, e);
+            zmq_msg_send(&message_to_r_son, RIGHT_SOCKET, 0);
+            zmq_msg_close(&message_to_r_son);
+
+            for (int32_t i = 0; i < 5; ++i) {
+                event e_copy = *e;
+                e_copy.to = CLIENT_PID;
+                zmq_msg_t message_to_master;
+                zmq_msg_init(&message_to_master);
+                create_message(&message_to_master, &e_copy);
+                zmq_msg_send(&message_to_master, HRBT_SOCKET, 0);
+                zmq_msg_close(&message_to_master);  
+                usleep(1e3 * e_copy.sleep_time);
+            }          
         }
     }
 }
@@ -101,7 +128,7 @@ main(int argc, char* argv[]) {
     strcpy(PARENT_NAME,argv[2]);
     init_cmp_name(CLIENT_PID, SOCKET_NAME_L, left);
     init_cmp_name(CLIENT_PID, SOCKET_NAME_R, right);
-    init_cmp_name(CLIENT_PID, SOCKET_NAME_H, hrbt);
+    strcpy(SOCKET_NAME_H, MASTER_SOCKET_SUB);
     if (init_computing_socket(  &CONTEXT, &LEFT_SOCKET, &RIGHT_SOCKET, &PARENT_SOCKET,
                                 &HRBT_SOCKET, SOCKET_NAME_L, SOCKET_NAME_R, SOCKET_NAME_H,
                                 PARENT_NAME, CLIENT_PID) != 0) {
