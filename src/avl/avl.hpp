@@ -5,6 +5,7 @@
 #include <string>
 #include <memory>
 #include <cstdint>
+#include <zmq.h>
 
 /**
  * структура для процесса-вершины дерева с укаанным id
@@ -92,6 +93,11 @@ class avl_tree {
          * в случае неуспеха вернется -1
          */
         int32_t get_parent_pid(int32_t pid);
+        /**
+         * получить pid корня
+         * в случае неудачи вернет -1
+         */
+        int32_t get_root_pid();
         /** 
          * деструктор по умолчанию
          */

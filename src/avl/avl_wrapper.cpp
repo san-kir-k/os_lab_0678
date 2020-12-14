@@ -35,3 +35,7 @@ int* get_path(avl_tree* tree, int id, int* path_len) {
 void print_tree(struct avl_tree* tree) {
     tree->print();
 }
+
+int get_root_pid(avl_tree* tree) {
+    return tree->get_root_pid();
+}
