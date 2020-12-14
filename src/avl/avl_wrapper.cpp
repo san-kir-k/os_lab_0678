@@ -26,10 +26,13 @@ int get_parent_id(avl_tree* tree, int id) {
     return tree->get_parent_pid(id);
 }
 
-int* get_path(avl_tree* tree, int id, int* path_len) {
-    if (!tree->search(id, buffer, path_len))
+bool get_path(avl_tree* tree, int id, int* path_len, int* path) {
+    if (!tree->search(id, buffer, path_len)) {
         *path_len = -1;
-    return buffer;
+        return false;
+    }
+    path = buffer;
+    return true;
 }
 
 void print_tree(struct avl_tree* tree) {

@@ -22,6 +22,21 @@ static void*        EXEC_PUB;
 static void*        HEARTBIT_SUB;
 
 void
+create_event(event* e, char* text, char* pattern, int32_t pid) {
+    strcpy(e->text, text);
+    strcpy(e->pattern, pattern);
+    e->text_size = 0;
+    for (int32_t i = 0; text[i] != '\0'; i++) {
+        e->text_size++;
+    }
+    e->pattern_size = 0;
+    for (int32_t i = 0; pattern[i] != '\0'; i++) {
+        e->pattern_size++;
+    }
+    e->to = pid;
+}
+
+void
 init_table() {
     for (int32_t i = 0; i < MAX_PID_NUM; ++i) {
         REAL_PID_TABLE[i] = VOID_PID;
@@ -36,7 +51,7 @@ remove_node(int32_t pid) {
     }
     int32_t rpid = REAL_PID_TABLE[pid];
     if (rpid == VOID_PID) {
-        printf("Invalid pid.\n");
+        printf("There is no node with this pid.\n");
         return false;
     }
     kill(rpid, SIGTERM);
@@ -65,8 +80,24 @@ create_node(int32_t pid) {
         printf("Node with this pid has already created.\n");
         return false;
     }
+    char parent_name[64];
+    int32_t path_len = 10;
+    int32_t path[10];
+    add_to_tree(AVL_TREE_PTR, pid);
+    get_path(AVL_TREE_PTR, pid, &path_len, path);
+    if (path_len == 1) {
+        strcpy(parent_name, MASTER_SOCKET);
+    } else {
+        int32_t parent_pid = get_parent_id(AVL_TREE_PTR, pid);
+        if (pid < parent_pid) {
+            init_cmp_name(parent_pid, parent_name, left);
+        } else {
+            init_cmp_name(parent_pid, parent_name, right);
+        }
+    }
     int32_t fv = fork();
     if (fv < 0) {
+        remove_from_tree(AVL_TREE_PTR, pid);
         printf("Unable to create node, fork err.\n");
         return false;
     } else if (fv == 0) {
@@ -74,20 +105,29 @@ create_node(int32_t pid) {
         sprintf(client_id, "%d", pid);
         char client_name[20];
         sprintf(client_name, "client_%d", pid);
-        char parent_name[64] = MASTER_SOCKET;
-        execl(CLIENT_NAME, client_name, client_id, parent_name, NULL);
+        execl(CLIENT_PROG_NAME, client_name, client_id, parent_name, NULL);
     } else {
         REAL_PID_TABLE[pid] = fv;
-        add_to_tree(AVL_TREE_PTR, pid);
     }
     return true;
 }
 
 bool
-send_exec(char* text, char* pattern) {
+send_exec(char* text, char* pattern, int32_t pid) {
+    if (pid < 0 || pid > 63) {
+        printf("Invalid pid.\n");
+        return false;
+    }
+    if (REAL_PID_TABLE[pid] == VOID_PID) {
+        printf("There is no node with this pid.\n");
+        return false;
+    }
+    event e; // добавить в ивент расширения протокола, создавать научиться ноды в список
+    create_event(&e, text, pattern, pid);
     zmq_msg_t message;
     zmq_msg_init(&message);
-    zmq_msg_send(&message, EXEC_PUB, ZMQ_SNDMORE);
+    create_message(&message, &e);
+    zmq_msg_send(&message, EXEC_PUB, 0);
     zmq_msg_close(&message);
     return true;
 }
@@ -130,7 +170,33 @@ server_loop() {
                 printf("Unable to remove node with pid %d\n", pid);
             }
         } else if (strcmp(cmd, "exec") == 0) {
-            send_exec(NULL, NULL);
+            char text[128];
+            char pattern[128];
+            iv = input_int(&pid);
+            if (iv == eof) {
+                printf("Server finishing it's work...\n");
+                break;
+            } else if (iv == bad) {
+                printf("Unknown arg, try help.\n");
+                continue;
+            }
+            iv = input_str(text);
+            if (iv == eof) {
+                printf("Server finishing it's work...\n");
+                break;
+            } else if (iv == bad) {
+                printf("Unknown arg, try help.\n");
+                continue;
+            }
+            iv = input_str(pattern);
+            if (iv == eof) {
+                printf("Server finishing it's work...\n");
+                break;
+            } else if (iv == bad) {
+                printf("Unknown arg, try help.\n");
+                continue;
+            }
+            send_exec(text, pattern, pid);
         } else if (strcmp(cmd, "help") == 0) {
             help();
         } else if (strcmp(cmd, "print") == 0) {

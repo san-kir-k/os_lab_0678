@@ -3,9 +3,29 @@
 static const int32_t TIME_MS = 100;
 
 void
+create_message(zmq_msg_t* msg, event* e) {
+    zmq_msg_init_size(msg, sizeof(event));
+    memcpy(zmq_msg_data(msg), e, sizeof(event));
+}
+
+void
+init_cmp_name(int pid, char* name, type node_type) {
+    char pid_str[10];
+    sprintf(pid_str, "%d", pid);
+    if (node_type == left) {
+        strcpy(name, CMP_SOCKET_PATTERN_L);
+    } else if (node_type == right) {
+        strcpy(name, CMP_SOCKET_PATTERN_R);
+    } else {
+        strcpy(name, CMP_SOCKET_PATTERN_H);
+    }
+    strcat(name, pid_str);
+}
+
+void
 print_err_cmp(int32_t pid) {
     char msg[20];
-    sprintf(msg, "ERROR, PID %d: ", pid);
+    sprintf(msg, "ERROR, PID %d", pid);
     perror(msg);    
 }
 
@@ -52,7 +72,8 @@ init_master_socket(void** context, void** pub, void** sub) {
 
 int32_t
 init_computing_socket(  void** context, void** left_pub, void** right_pub, void** parent_sub,
-                        void** hrbt_pub, char* socket_name, char* parent_name, int32_t pid) {
+                        void** hrbt_pub, char* socket_name_l, char* socket_name_r,
+                        char* socket_name_h, char* parent_name, int32_t pid) {
     *context = zmq_ctx_new();
     if (*context == NULL) {
         fprintf(stderr, "PID %d: Unable to create context.\n", pid);
@@ -64,7 +85,7 @@ init_computing_socket(  void** context, void** left_pub, void** right_pub, void*
         print_err_cmp(pid);
         return -6;
     }
-    int32_t pc = zmq_bind(left_publisher, socket_name); 
+    int32_t pc = zmq_bind(left_publisher, socket_name_l); 
     if (pc != 0) {
         print_err_cmp(pid);
         return -1;
@@ -76,7 +97,7 @@ init_computing_socket(  void** context, void** left_pub, void** right_pub, void*
         print_err_cmp(pid);
         return -7;
     }
-    pc = zmq_bind(right_publisher, socket_name); 
+    pc = zmq_bind(right_publisher, socket_name_r); 
     if (pc != 0) {
         print_err_cmp(pid);
         return -2;
@@ -88,7 +109,7 @@ init_computing_socket(  void** context, void** left_pub, void** right_pub, void*
         print_err_cmp(pid);
         return -8;
     }
-    pc = zmq_bind(hrbt_publisher, socket_name); 
+    pc = zmq_bind(hrbt_publisher, socket_name_h); 
     if (pc != 0) {
         print_err_cmp(pid);
         return -3;
