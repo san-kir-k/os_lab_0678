@@ -375,7 +375,6 @@ void avl_tree::_go_up_remove(std::shared_ptr<tree_node> node, std::shared_ptr<tr
             node->balance++;
         }
     }
-    std::cout << "nb: " << node->balance << "\n";
     if (std::abs(node->balance) == 1) {
         return;
     } else if (node->balance == 0) {
