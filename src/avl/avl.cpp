@@ -275,7 +275,9 @@ bool avl_tree::delete_sub_tree(int32_t* pids, int32_t len) {
         }
         _delete_sub_tree(to_delete);
     }
-    _reconstruct();
+    if (_root != nullptr) {
+        _reconstruct();
+    }
     return true;
 }
 
