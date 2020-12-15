@@ -299,13 +299,15 @@ void avl_tree::_delete_sub_tree(std::shared_ptr<tree_node> node) {
         return;
     }
     else {
-        if (node->parent.lock()->left == node) {
-            node->parent.lock()->left = nullptr;
+        if (node->parent.lock() != nullptr) {
+            if (node->parent.lock()->left == node) {
+                node->parent.lock()->left = nullptr;
+            }
+            else {
+                node->parent.lock()->right = nullptr;
+            }
+            node->parent.lock() = nullptr;
         }
-        else {
-            node->parent.lock()->right = nullptr;
-        }
-        node->parent.lock() = nullptr;
     }
 }
 
