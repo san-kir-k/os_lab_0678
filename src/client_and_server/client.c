@@ -87,7 +87,6 @@ mm_pass_relax() {
                 sprintf(PARENT_NAME, CMP_SOCKET_PATTERN_R"%d", TMP_PARENT_PID);
             }
         }
-        // printf("parent %s\n", PARENT_NAME);
         zmq_connect(PARENT_SOCKET, PARENT_NAME); 
         PARENT_PID = TMP_PARENT_PID;
     }
@@ -148,8 +147,6 @@ computing_loop() {
                     send_to(LEFT_SOCKET, &e);
                 }
             } else {
-                // printf("I am %d, my pid is %d\n", CLIENT_PID, getpid());
-                // printf("P: %s\n", PARENT_NAME);
                 compute(&e);
             }
         } else if (e.cmd == hrbt_cmd) {
