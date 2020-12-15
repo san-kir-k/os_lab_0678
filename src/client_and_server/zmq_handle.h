@@ -15,8 +15,8 @@ typedef enum {
 } cmd_type;
 
 typedef struct {
-    char text[128];
-    char pattern[128];
+    char text[MAX_STRLEN];
+    char pattern[MAX_STRLEN];
     int32_t text_size;
     int32_t pattern_size;
     int32_t to;
@@ -32,6 +32,8 @@ typedef enum {
 
 void        create_message(zmq_msg_t* msg, event* e);
 void        init_cmp_name(int pid, char* name, socket_type node_type);
+
+void        send_to(void* socket, event* e);
 
 void        print_err_cmp(int32_t pid);
 void        print_err_mas();

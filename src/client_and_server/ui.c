@@ -28,6 +28,11 @@ help() {
     printf("|              |       (pids range from 0 to 63)           |\n");
     printf("|--------------+-------------------------------------------|\n");
     printf("|     print    |         print process avl tree            |\n");
+    printf("|--------------+-------------------------------------------|\n");
+    printf("|   heartbit   |      heartbit all computing nodes         |\n");
+    printf("|    <time>    |   master will wait signal for 4*time ms   |\n");
+    printf("|--------------+-------------------------------------------|\n");
+    printf("|     table    |             print pid table               |\n");
     printf("+--------------+-------------------------------------------+\n\n");
 }
 

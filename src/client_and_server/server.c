@@ -47,7 +47,7 @@ init_table() {
 
 bool
 remove_node(int32_t pid) {
-    if (pid < 0 || pid > 63) {
+    if (pid < 0 || pid > MAX_PID_NUM - 1) {
         printf("Invalid pid.\n");
         return false;
     }
@@ -56,9 +56,9 @@ remove_node(int32_t pid) {
         printf("There is no node with this pid.\n");
         return false;
     }
-    kill(rpid, SIGTERM);
     REAL_PID_TABLE[pid] = VOID_PID;
     remove_from_tree(AVL_TREE_PTR, pid);
+    kill(rpid, SIGTERM);
     return true;
 }
 
@@ -73,7 +73,7 @@ terminate_all_nodes() {
 
 bool
 create_node(int32_t pid) {
-    if (pid < 0 || pid > 63) {
+    if (pid < 0 || pid > MAX_PID_NUM - 1) {
         printf("Invalid pid.\n");
         return false;
     }
@@ -81,9 +81,9 @@ create_node(int32_t pid) {
         printf("Node with this pid has already created.\n");
         return false;
     }
-    char parent_name[64];
-    int32_t path_len = 10;
-    int32_t path[10];
+    char parent_name[MAX_STRLEN];
+    int32_t path_len = MAX_STRLEN;
+    int32_t path[MAX_STRLEN];
     add_to_tree(AVL_TREE_PTR, pid);
     get_path(AVL_TREE_PTR, pid, &path_len, path);
     if (path_len == 1) {
@@ -102,9 +102,9 @@ create_node(int32_t pid) {
         printf("Unable to create node, fork err.\n");
         return false;
     } else if (fv == 0) {
-        char client_id[10];
+        char client_id[MAX_STRLEN];
         sprintf(client_id, "%d", pid);
-        char client_name[20];
+        char client_name[MAX_STRLEN];
         sprintf(client_name, "client_%d", pid);
         execl(CLIENT_PROG_NAME, client_name, client_id, parent_name, NULL);
     } else {
@@ -115,7 +115,7 @@ create_node(int32_t pid) {
 
 bool
 send_exec(char* text, char* pattern, int32_t pid) {
-    if (pid < 0 || pid > 63) {
+    if (pid < 0 || pid > MAX_PID_NUM - 1) {
         printf("Invalid pid.\n");
         return false;
     }
@@ -125,11 +125,7 @@ send_exec(char* text, char* pattern, int32_t pid) {
     }
     event e;
     create_event(&e, text, pattern, pid, exec_cmd, 0);
-    zmq_msg_t message;
-    zmq_msg_init(&message);
-    create_message(&message, &e);
-    zmq_msg_send(&message, EXEC_PUB, 0);
-    zmq_msg_close(&message);
+    send_to(EXEC_PUB, &e);
     return true;
 }
 
@@ -137,11 +133,7 @@ void
 send_heartbit(int32_t input_time) {
     event e;
     create_event(&e, "", "", -1, hrbt_cmd, input_time);
-    zmq_msg_t message;
-    zmq_msg_init(&message);
-    create_message(&message, &e);
-    zmq_msg_send(&message, EXEC_PUB, 0);
-    zmq_msg_close(&message);
+    send_to(EXEC_PUB, &e);
 }
 
 void
@@ -170,21 +162,36 @@ heartbit(int32_t input_time) {
         zmq_msg_close(&message);        
     }
     int32_t count_of_dead = 0;
+    int32_t count_of_void = 0;
     for (int32_t i = 0; i < MAX_PID_NUM; ++i) {
         if (heartbit_table[i] == 0) {
-            printf("Dead: %d\n", i);
+            printf("OK: %d\n", i);
             count_of_dead++;
+        } else if (heartbit_table[i] == -1) {
+            count_of_void++;
         }
     }
-    if (count_of_dead == 0) {
+    if (count_of_void == MAX_PID_NUM) {
+        printf("There are no alive nodes now.\n");
+    } else if (count_of_dead == 0) {
         printf("All is alive.\n");
+    }
+    // TODO добавить remove_sub_tree
+}
+
+void
+print_table() {
+    for (int32_t i = 0; i < MAX_PID_NUM; ++i) {
+        if (REAL_PID_TABLE[i] != VOID_PID) {
+            printf("Client id: %d, pid: %d\n", i, REAL_PID_TABLE[i]);
+        }
     }
 }
 
 void 
 server_loop() {
-    char cmd[32];
-    int32_t pid = -1;
+    char cmd[MAX_STRLEN];
+    int32_t pid = VOID_PID;
     while (true) {
         input_val iv = input_str(cmd);
         if (iv == eof) {
@@ -206,6 +213,7 @@ server_loop() {
             if (!create_node(pid)) {
                 printf("Unable to create node with pid %d\n", pid);
             }
+            printf("OK: %d\n", REAL_PID_TABLE[pid]);
         } else if (strcmp(cmd, "remove") == 0) {
             iv = input_int(&pid);
             if (iv == eof) {
@@ -218,9 +226,10 @@ server_loop() {
             if (!remove_node(pid)) {
                 printf("Unable to remove node with pid %d\n", pid);
             }
+            printf("OK\n");
         } else if (strcmp(cmd, "exec") == 0) {
-            char text[128];
-            char pattern[128];
+            char text[MAX_STRLEN];
+            char pattern[MAX_STRLEN];
             iv = input_int(&pid);
             if (iv == eof) {
                 printf("Server finishing it's work...\n");
@@ -261,6 +270,8 @@ server_loop() {
             heartbit(input_time);
         } else if (strcmp(cmd, "print") == 0) {
             print_tree(AVL_TREE_PTR);
+        } else if (strcmp(cmd, "table") == 0) {
+            print_table();
         } else {
             printf("Unknown command, try help.\n");
         }
@@ -273,13 +284,13 @@ main() {
     init_avl(&AVL_TREE_PTR);
     init_table();
     if (init_master_socket(&CONTEXT, &EXEC_PUB, &HEARTBIT_SUB) != 0) {
-        return -1;
+        return SERV_INIT_ERR;
     }
     help();
     server_loop();
     deinit_avl(AVL_TREE_PTR);
     if (deinit_master_socket(CONTEXT, EXEC_PUB, HEARTBIT_SUB) != 0) {
-        return -2;
+        return SERV_DEINIT_ERR;
     }
     return 0;
 }

@@ -3,10 +3,9 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-typedef enum input_val input_val;
-enum input_val {
+typedef enum {
     ok, eof, bad
-};
+} input_val;
 
 void        skip_str();
 void        help();

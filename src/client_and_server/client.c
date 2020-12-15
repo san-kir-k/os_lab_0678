@@ -14,10 +14,10 @@
 #include "defines.h"
 
 static int32_t  CLIENT_PID;
-static char     SOCKET_NAME_L[64];
-static char     SOCKET_NAME_R[64];
-static char     SOCKET_NAME_H[64];
-static char     PARENT_NAME[64];
+static char     SOCKET_NAME_L[MAX_STRLEN];
+static char     SOCKET_NAME_R[MAX_STRLEN];
+static char     SOCKET_NAME_H[MAX_STRLEN];
+static char     PARENT_NAME[MAX_STRLEN];
 static void*    CONTEXT;
 static void*    LEFT_SOCKET;
 static void*    RIGHT_SOCKET;  
@@ -55,7 +55,7 @@ naive(char* text, char* pattern, int32_t text_size, int32_t pattern_size, int32_
 
 void
 compute(event* e) {
-    int32_t res[128];
+    int32_t res[MAX_STRLEN];
     int32_t len = naive(e->text, e->pattern, e->text_size, e->pattern_size, res);
     printf("Result is:\n");
     if (len == 0) {
@@ -79,39 +79,21 @@ computing_loop() {
         zmq_msg_close(&message);
         if (e->cmd == exec_cmd) {
             if (e->to != CLIENT_PID) {
-                zmq_msg_t message_to_son;
-                zmq_msg_init(&message_to_son);
-                create_message(&message_to_son, e);
                 if (e->to > CLIENT_PID) {
-                    zmq_msg_send(&message_to_son, RIGHT_SOCKET, 0);
+                    send_to(RIGHT_SOCKET, e);
                 } else {
-                    zmq_msg_send(&message_to_son, LEFT_SOCKET, 0);
+                    send_to(LEFT_SOCKET, e);
                 }
-                zmq_msg_close(&message_to_son);
             } else {
                 compute(e);
             }
         } else {
-            zmq_msg_t message_to_l_son;
-            zmq_msg_init(&message_to_l_son);
-            create_message(&message_to_l_son, e);
-            zmq_msg_send(&message_to_l_son, LEFT_SOCKET, 0);
-            zmq_msg_close(&message_to_l_son);
-
-            zmq_msg_t message_to_r_son;
-            zmq_msg_init(&message_to_r_son);
-            create_message(&message_to_r_son, e);
-            zmq_msg_send(&message_to_r_son, RIGHT_SOCKET, 0);
-            zmq_msg_close(&message_to_r_son);
-
+            send_to(LEFT_SOCKET, e);
+            send_to(RIGHT_SOCKET, e);
             for (int32_t i = 0; i < 5; ++i) {
                 event e_copy = *e;
                 e_copy.to = CLIENT_PID;
-                zmq_msg_t message_to_master;
-                zmq_msg_init(&message_to_master);
-                create_message(&message_to_master, &e_copy);
-                zmq_msg_send(&message_to_master, HRBT_SOCKET, 0);
-                zmq_msg_close(&message_to_master);  
+                send_to(HRBT_SOCKET, &e_copy); 
                 usleep(1e3 * e_copy.sleep_time);
             }          
         }
@@ -122,7 +104,7 @@ int
 main(int argc, char* argv[]) {
     if (signal(SIGTERM, process_sigterm) == SIG_ERR) {
         perror("ERROR: ");
-        return 1;
+        return CLIENT_SIG_ERR;
     }
     CLIENT_PID = atoi(argv[1]);
     strcpy(PARENT_NAME,argv[2]);
@@ -132,12 +114,12 @@ main(int argc, char* argv[]) {
     if (init_computing_socket(  &CONTEXT, &LEFT_SOCKET, &RIGHT_SOCKET, &PARENT_SOCKET,
                                 &HRBT_SOCKET, SOCKET_NAME_L, SOCKET_NAME_R, SOCKET_NAME_H,
                                 PARENT_NAME, CLIENT_PID) != 0) {
-        return -1;
+        return CLIENT_INIT_ERR;
     }
     computing_loop();
     if (deinit_computing_socket(CONTEXT, LEFT_SOCKET, RIGHT_SOCKET,
                                 PARENT_SOCKET, HRBT_SOCKET, CLIENT_PID) != 0) {
-        return -2;
+        return CLIENT_DEINIT_ERR;
     }
     return 0;
 }
