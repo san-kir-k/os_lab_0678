@@ -14,14 +14,6 @@ bool deinit_avl(avl_tree* tree) {
     return true;
 }
 
-bool add_to_tree(avl_tree* tree, int id) {
-    return tree->insert(id);
-}
-
-bool remove_from_tree(avl_tree* tree, int id) {
-    return tree->remove(id);
-}
-
 int get_parent_id(avl_tree* tree, int id) {
     return tree->get_parent_pid(id);
 }
@@ -41,4 +33,21 @@ void print_tree(struct avl_tree* tree) {
 
 int get_root_pid(avl_tree* tree) {
     return tree->get_root_pid();
+}
+
+bool add_to_tree(avl_tree* tree, int id) {
+    int val = tree->insert(id);
+    mm_send_relax();
+    return val;
+}
+
+bool remove_from_tree(avl_tree* tree, int id) {
+    int val = tree->remove(id);
+    mm_send_relax();
+    return val;
+}
+
+void delete_subtree(avl_tree* tree, int* ids, int len) {
+    tree->delete_sub_tree(ids, len);
+    return;
 }

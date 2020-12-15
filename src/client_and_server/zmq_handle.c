@@ -1,6 +1,8 @@
 #include "zmq_handle.h"
 
 static const int32_t TIME_MS = 100;
+void*    EXEC_PUB;
+void*    HEARTBIT_SUB;
 
 void
 create_message(zmq_msg_t* msg, event* e) {
@@ -27,6 +29,32 @@ send_to(void* socket, event* e) {
     create_message(&message, e);
     zmq_msg_send(&message, socket, 0);
     zmq_msg_close(&message);
+}
+
+void
+mm_send_rebind(int id, int target_id) {
+    // printf("Sending rebind to <%d, %d>\n", id, target_id);
+    event sent_cmd;
+    sent_cmd.to = id;
+    sent_cmd.cmd = rebind_cmd;
+    sent_cmd.change_to = target_id;
+    zmq_msg_t zmqmsg;
+    zmq_msg_init_size(&zmqmsg, sizeof(event));
+    memcpy(zmq_msg_data(&zmqmsg), &sent_cmd, sizeof(event));
+    int send = zmq_msg_send(&zmqmsg, EXEC_PUB, 0);
+    zmq_msg_close(&zmqmsg);
+}
+
+void 
+mm_send_relax() {
+    // printf("Sending relax\n");
+    event sent_cmd;
+    sent_cmd.cmd = relax_cmd;
+    zmq_msg_t zmqmsg;
+    zmq_msg_init_size(&zmqmsg, sizeof(event));
+    memcpy(zmq_msg_data(&zmqmsg), &sent_cmd, sizeof(event));
+    int send = zmq_msg_send(&zmqmsg, EXEC_PUB, 0);
+    zmq_msg_close(&zmqmsg);
 }
 
 void

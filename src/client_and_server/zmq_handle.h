@@ -11,7 +11,9 @@
 
 typedef enum {
     exec_cmd,
-    hrbt_cmd
+    hrbt_cmd,
+    rebind_cmd,
+    relax_cmd
 } cmd_type;
 
 typedef struct {
@@ -22,6 +24,7 @@ typedef struct {
     int32_t to;
     cmd_type cmd;
     int32_t sleep_time;
+    int32_t change_to;
 } event;
 
 typedef enum {
@@ -34,6 +37,9 @@ void        create_message(zmq_msg_t* msg, event* e);
 void        init_cmp_name(int pid, char* name, socket_type node_type);
 
 void        send_to(void* socket, event* e);
+
+void        mm_send_relax();
+void        mm_send_rebind(int id, int target_id);
 
 void        print_err_cmp(int32_t pid);
 void        print_err_mas();

@@ -18,8 +18,8 @@
 static int32_t      REAL_PID_TABLE[MAX_PID_NUM];
 static avl_tree*    AVL_TREE_PTR;
 static void*        CONTEXT;
-static void*        EXEC_PUB;
-static void*        HEARTBIT_SUB;
+extern void*        EXEC_PUB;
+extern void*        HEARTBIT_SUB;
 
 void
 create_event(event* e, char* text, char* pattern, int32_t pid, cmd_type cmd, int32_t sleep_time) {
@@ -58,6 +58,7 @@ remove_node(int32_t pid) {
     }
     REAL_PID_TABLE[pid] = VOID_PID;
     remove_from_tree(AVL_TREE_PTR, pid);
+    sleep(1);
     kill(rpid, SIGTERM);
     return true;
 }
@@ -86,10 +87,11 @@ create_node(int32_t pid) {
     int32_t path[MAX_STRLEN];
     add_to_tree(AVL_TREE_PTR, pid);
     get_path(AVL_TREE_PTR, pid, &path_len, path);
+    int32_t parent_pid = -1;
     if (path_len == 1) {
         strcpy(parent_name, MASTER_SOCKET_PUB);
     } else {
-        int32_t parent_pid = get_parent_id(AVL_TREE_PTR, pid);
+        parent_pid = get_parent_id(AVL_TREE_PTR, pid);
         if (pid < parent_pid) {
             init_cmp_name(parent_pid, parent_name, left);
         } else {
@@ -106,7 +108,9 @@ create_node(int32_t pid) {
         sprintf(client_id, "%d", pid);
         char client_name[MAX_STRLEN];
         sprintf(client_name, "client_%d", pid);
-        execl(CLIENT_PROG_NAME, client_name, client_id, parent_name, NULL);
+        char parent_id[MAX_STRLEN];
+        sprintf(parent_id, "%d", parent_pid);
+        execl(CLIENT_PROG_NAME, client_name, client_id, parent_name, parent_id, NULL);
     } else {
         REAL_PID_TABLE[pid] = fv;
     }
@@ -136,6 +140,16 @@ send_heartbit(int32_t input_time) {
     send_to(EXEC_PUB, &e);
 }
 
+void kill_child(int32_t pid) {
+    int32_t rpid = REAL_PID_TABLE[pid];
+    if (rpid == VOID_PID) {
+        printf("There is no node with this pid.\n");
+        return;
+    }
+    REAL_PID_TABLE[pid] = VOID_PID;
+    kill(rpid, SIGTERM);
+}
+
 void
 heartbit(int32_t input_time) { 
     int32_t time_to_wait = 4 * input_time;
@@ -163,9 +177,11 @@ heartbit(int32_t input_time) {
     }
     int32_t count_of_dead = 0;
     int32_t count_of_void = 0;
+    int32_t dead_table[MAX_PID_NUM];
     for (int32_t i = 0; i < MAX_PID_NUM; ++i) {
         if (heartbit_table[i] == 0) {
             printf("OK: %d\n", i);
+            dead_table[count_of_dead] = i;
             count_of_dead++;
         } else if (heartbit_table[i] == -1) {
             count_of_void++;
@@ -176,7 +192,13 @@ heartbit(int32_t input_time) {
     } else if (count_of_dead == 0) {
         printf("All is alive.\n");
     }
-    // TODO добавить remove_sub_tree
+    if (count_of_dead != 0) {
+        delete_subtree(AVL_TREE_PTR, dead_table, count_of_dead);
+        sleep(1);
+        for (int i = 0; i < count_of_dead; ++i) {
+            kill_child(dead_table[i]);
+        }
+    }
 }
 
 void

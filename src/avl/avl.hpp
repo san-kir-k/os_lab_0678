@@ -6,6 +6,11 @@
 #include <memory>
 #include <cstdint>
 #include <zmq.h>
+#include <unistd.h>
+
+extern "C" {
+#include "../client_and_server/zmq_handle.h"
+}
 
 /**
  * структура для процесса-вершины дерева с укаанным id
@@ -82,7 +87,7 @@ class avl_tree {
          * в случае успеха дерево перебалансируется
          * в случае, если такого процесса нет, то метод вернет false
          */
-        bool delete_sub_tree(int32_t pid);
+        bool delete_sub_tree(int32_t* pids, int32_t len);
         /**
          * удаление процесса с номером pid
          * в случае неуспеха вернет false

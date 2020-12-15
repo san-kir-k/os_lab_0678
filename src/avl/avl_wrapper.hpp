@@ -1,6 +1,9 @@
 #pragma once
 
 #include "avl.hpp"
+extern "C" {
+#include "../client_and_server/zmq_handle.h"
+}
 
 extern "C" bool init_avl(avl_tree** tree);
 
@@ -17,3 +20,5 @@ extern "C" bool get_path(avl_tree* tree, int id, int* path_len, int* path);
 extern "C" void print_tree(avl_tree* tree);
 
 extern "C" int get_root_pid(avl_tree* tree);
+
+extern "C" void delete_subtree(avl_tree* tree, int* ids, int len);
