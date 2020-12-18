@@ -1,8 +1,8 @@
 #include "zmq_handle.h"
 
-static const int32_t TIME_MS = 100;
-void*    EXEC_PUB;
-void*    HEARTBIT_SUB;
+static const int32_t    TIME_MS = 100;
+void*                   EXEC_PUB;
+void*                   HEARTBIT_SUB;
 
 void
 create_message(zmq_msg_t* msg, event* e) {
@@ -33,7 +33,6 @@ send_to(void* socket, event* e) {
 
 void
 mm_send_rebind(int id, int target_id) {
-    // printf("Sending rebind to <%d, %d>\n", id, target_id);
     event sent_cmd;
     sent_cmd.to = id;
     sent_cmd.cmd = rebind_cmd;
@@ -47,7 +46,6 @@ mm_send_rebind(int id, int target_id) {
 
 void 
 mm_send_relax() {
-    // printf("Sending relax\n");
     event sent_cmd;
     sent_cmd.cmd = relax_cmd;
     zmq_msg_t zmqmsg;

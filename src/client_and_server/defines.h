@@ -43,6 +43,7 @@
 
 #define SERV_INIT_ERR -1
 #define SERV_DEINIT_ERR -2
+#define SERV_SIG_ERR -3
 
 #define CLIENT_INIT_ERR -1
 #define CLIENT_DEINIT_ERR -2

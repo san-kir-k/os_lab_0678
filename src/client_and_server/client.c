@@ -57,38 +57,43 @@ mm_pass_rebind(int id, event* cmd) {
 
 void 
 mm_pass_relax() {
-    event sent_cmd;
-    sent_cmd.cmd = relax_cmd;
-    zmq_msg_t zmqmsg;
-    zmq_msg_init_size(&zmqmsg, sizeof(event));
-    memcpy(zmq_msg_data(&zmqmsg), &sent_cmd, sizeof(event));
-    zmq_msg_send(&zmqmsg, LEFT_SOCKET, 0);
-    zmq_msg_close(&zmqmsg);
-
-    sent_cmd.cmd = relax_cmd;
-    zmq_msg_init_size(&zmqmsg, sizeof(event));
-    memcpy(zmq_msg_data(&zmqmsg), &sent_cmd, sizeof(event));
-    zmq_msg_send(&zmqmsg, RIGHT_SOCKET, 0);
-    zmq_msg_close(&zmqmsg);
-
-    if (PARENT_PID != TMP_PARENT_PID) {
-        // printf("NODE %d: Changing from %d to %d\n", CLIENT_PID, PARENT_PID, TMP_PARENT_PID);
-        zmq_disconnect(PARENT_SOCKET, PARENT_NAME);
-        if (CLIENT_PID < TMP_PARENT_PID) {
-            if (TMP_PARENT_PID == -1) {
-                sprintf(PARENT_NAME, MASTER_SOCKET_PUB);
+    {
+        event sent_cmd;
+        sent_cmd.cmd = relax_cmd;
+        zmq_msg_t zmqmsg;
+        zmq_msg_init_size(&zmqmsg, sizeof(event));
+        memcpy(zmq_msg_data(&zmqmsg), &sent_cmd, sizeof(event));
+        zmq_msg_send(&zmqmsg, LEFT_SOCKET, 0);
+        zmq_msg_close(&zmqmsg);
+    }
+    {
+        event sent_cmd;
+        sent_cmd.cmd = relax_cmd;
+        zmq_msg_t zmqmsg;
+        zmq_msg_init_size(&zmqmsg, sizeof(event));
+        memcpy(zmq_msg_data(&zmqmsg), &sent_cmd, sizeof(event));
+        zmq_msg_send(&zmqmsg, RIGHT_SOCKET, 0);
+        zmq_msg_close(&zmqmsg);
+    }
+    {
+        if (PARENT_PID != TMP_PARENT_PID) {
+            zmq_disconnect(PARENT_SOCKET, PARENT_NAME);
+            if (CLIENT_PID < TMP_PARENT_PID) {
+                if (TMP_PARENT_PID == -1) {
+                    sprintf(PARENT_NAME, MASTER_SOCKET_PUB);
+                } else {
+                    sprintf(PARENT_NAME, CMP_SOCKET_PATTERN_L"%d", TMP_PARENT_PID);
+                }
             } else {
-                sprintf(PARENT_NAME, CMP_SOCKET_PATTERN_L"%d", TMP_PARENT_PID);
+                if (TMP_PARENT_PID == -1) {
+                    sprintf(PARENT_NAME, MASTER_SOCKET_PUB);
+                } else {
+                    sprintf(PARENT_NAME, CMP_SOCKET_PATTERN_R"%d", TMP_PARENT_PID);
+                }
             }
-        } else {
-            if (TMP_PARENT_PID == -1) {
-                sprintf(PARENT_NAME, MASTER_SOCKET_PUB);
-            } else {
-                sprintf(PARENT_NAME, CMP_SOCKET_PATTERN_R"%d", TMP_PARENT_PID);
-            }
+            zmq_connect(PARENT_SOCKET, PARENT_NAME); 
+            PARENT_PID = TMP_PARENT_PID;
         }
-        zmq_connect(PARENT_SOCKET, PARENT_NAME); 
-        PARENT_PID = TMP_PARENT_PID;
     }
 }
 
@@ -139,7 +144,6 @@ computing_loop() {
         memcpy(&e, zmq_msg_data(&message), sizeof(event));
         zmq_msg_close(&message);
         if (e.cmd == exec_cmd) {
-            // printf("in node %d\n", CLIENT_PID);
             if (e.to != CLIENT_PID) {
                 if (e.to > CLIENT_PID) {
                     send_to(RIGHT_SOCKET, &e);

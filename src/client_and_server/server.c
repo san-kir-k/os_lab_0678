@@ -72,6 +72,14 @@ terminate_all_nodes() {
     }
 }
 
+void
+process_signal(int32_t sig) {
+    terminate_all_nodes();
+    deinit_avl(AVL_TREE_PTR);
+    deinit_master_socket(CONTEXT, EXEC_PUB, HEARTBIT_SUB);
+    exit(EXIT_SUCCESS);
+}
+
 bool
 create_node(int32_t pid) {
     if (pid < 0 || pid > MAX_PID_NUM - 1) {
@@ -234,8 +242,9 @@ server_loop() {
             }
             if (!create_node(pid)) {
                 printf("Unable to create node with pid %d\n", pid);
+            } else {
+                printf("OK: %d\n", REAL_PID_TABLE[pid]);
             }
-            printf("OK: %d\n", REAL_PID_TABLE[pid]);
         } else if (strcmp(cmd, "remove") == 0) {
             iv = input_int(&pid);
             if (iv == eof) {
@@ -247,8 +256,9 @@ server_loop() {
             }
             if (!remove_node(pid)) {
                 printf("Unable to remove node with pid %d\n", pid);
+            } else {
+                printf("OK\n");
             }
-            printf("OK\n");
         } else if (strcmp(cmd, "exec") == 0) {
             char text[MAX_STRLEN];
             char pattern[MAX_STRLEN];
@@ -303,6 +313,14 @@ server_loop() {
 
 int 
 main() {
+    if (signal(SIGSEGV, process_signal) == SIG_ERR) {
+        perror("ERROR: ");
+        return SERV_SIG_ERR;
+    }
+    if (signal(SIGINT, process_signal) == SIG_ERR) {
+        perror("ERROR: ");
+        return SERV_SIG_ERR;
+    }
     init_avl(&AVL_TREE_PTR);
     init_table();
     if (init_master_socket(&CONTEXT, &EXEC_PUB, &HEARTBIT_SUB) != 0) {
