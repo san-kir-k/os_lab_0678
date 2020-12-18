@@ -8,5 +8,6 @@ exec 3 ddd f
 heartbit 100
 remove 2
 exec 2 aadad d
+exec 1 aaa a
 print
 heartbit 100
